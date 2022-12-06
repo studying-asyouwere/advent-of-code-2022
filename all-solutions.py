@@ -129,6 +129,104 @@ while ii < len(rucksacks):
 
 print('The priority for the second task is: ' + str(priority_q2))
 
+# Day 4
+
+with open('input.txt', 'r') as file:
+    data = file.read().strip()
+
+sections = data.split('\n')
+
+n_overlap = 0
+for s in sections:
+    s_split = s.split(',')
+    first_sect_start, first_sect_end = s_split[0].split('-')
+    second_sect_start, second_sect_end = s_split[1].split('-')
+    if (int(first_sect_start) <= int(second_sect_start) and int(second_sect_end) <= int(first_sect_end)) or (int(second_sect_start) <= int(first_sect_start) and int(first_sect_end) <= int(second_sect_end)): 
+        n_overlap += 1
+
+print(n_overlap)
+
+n_overlap = 0
+for s in sections:
+    s_split = s.split(',')
+    first_sect_start, first_sect_end = map(int, s_split[0].split('-'))
+    second_sect_start, second_sect_end = map(int, s_split[1].split('-'))
+    if set(range(first_sect_start, first_sect_end + 1)) & set(range(second_sect_start, second_sect_end + 1)): 
+        n_overlap += 1
+
+print(n_overlap)
+
+# Day 5
+
+import re, copy
+
+with open('input.txt', 'r') as file:
+    stack_txt, instruction_data = file.read().split('\n\n')
+    stack_txt = stack_txt.split('\n')
+    instruction_data = instruction_data.split('\n')
+
+stack_last = stack_txt.pop()
+
+stack = {}
+loc = {}
+ordering = []
+for ii in range(len(stack_last)):
+    if stack_last[ii] != ' ':
+        stack[stack_last[ii]] = []
+        loc[stack_last[ii]] = ii
+        ordering.append(stack_last[ii])
+
+for line in reversed(stack_txt):
+    for key in loc.keys():
+        if line[loc[key]] != ' ':
+            stack[key].append(line[loc[key]])
+
+stack2 = copy.deepcopy(stack)
+
+for line in instruction_data:
+    if 'move' in line:
+        inst_values = re.findall(r'(\d+)', line)
+        count = int(inst_values[0])
+        ff = inst_values[1]
+        tt = inst_values[2]
+
+        for ii in range(count):
+            pop_val = stack[ff].pop()
+            stack[tt].append(pop_val)
+
+        stack2[tt] += stack2[ff][-count:]
+        stack2[ff] = stack2[ff][:-count]
+
+print('The answer for the first part is:')
+for ii in ordering:
+    print(stack[ii][-1], end = '')
+print()
+
+print('The answer for the second part is:')
+for ii in ordering:
+    print(stack2[ii][-1], end = '')
+
+# Day 6
+
+# read in the data
+with open('input.txt', 'r') as file:
+    data = file.read()
+
+# define the detector function
+def detector(data: str, size: int):
+    # data: is the signal data
+    # size: is the length of the expected marker we are searching for
+    ell = len(data) # length of the data
+    for ii in range(ell - size + 1): # go through all the marker possibilities
+        s = set(data[ii:ii + size]) # get unique elements in this marker possibility
+        if len(s) == size: # if all the elements are unique
+            return ii + size
+    return print('No marker found!')
+
+# print the solutions
+print('The answer for the first question is: ' + str(detector(data, 4)))
+print('The answer for the first question is: ' + str(detector(data, 14)))
+
 
 
 
