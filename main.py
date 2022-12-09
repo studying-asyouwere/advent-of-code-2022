@@ -1,60 +1,63 @@
-import os
+import numpy as np
 
-with open('input.txt', 'r') as file:
-    data = file.read().strip().split('\n')
+# put the input file in a matrix format
+grid = np.array([list(x.strip()) for x in open('input.txt')], int)
 
-# initialise dicts
-subdirs = {} # store the subdirectories here
-direct_directory_size = {} # store the directory sizes here (excluding all the subdirectories)
+# get number of rows and columns
+nrow, ncol = np.shape(grid)
 
-# extracting the folder structure
-for line in data:
-    if line[0] == '$':
-        ds, cmd, *ddir = line.split()
-        if cmd == 'cd':
-            path = ddir[0]
-            if path == '/': # for the top directory
-                curdir = path # this is the current directory
-            else:
-                curdir = os.path.normpath(os.path.join(curdir, path))
-            if curdir not in subdirs: # if we have not seen our current directory before
-                subdirs[curdir] = []
-                direct_directory_size[curdir] = 0
+best_view_score = 1 # initialising the best view score (at least one for any tree)
+n_tree_visible = ncol * 2 + (nrow - 2) * 2 # initialising visible trees (trees on the edge)
+for ii in range(1, nrow - 1): # go through all the rows inside
+    for iii in range(1, ncol - 1): # go through all the columns inside
+        tree = grid[ii, iii] # tree of interest
+        tree_up = grid[:ii, iii] # trees up
+        tree_down = grid[ii + 1:, iii] # trees down
+        tree_right = grid[ii, iii + 1:] # trees right
+        tree_left = grid[ii, :iii] # trees left
 
-    else: # if we get 'dir' or numbers instead of '$'
-        fsize, fname = line.split()
-        if fsize != 'dir': # if we get numbers
-            direct_directory_size[curdir] += int(fsize)
-        else: # if we get a new directory
-            subdirs[curdir].append(os.path.normpath(os.path.join(curdir, fname)))
+        # compute the tallest tree in each direction
+        tallest_tree_up = max(tree_up)
+        tallest_tree_down = max(tree_down)
+        tallest_tree_right = max(tree_right)
+        tallest_tree_left = max(tree_left)
 
-# size calculation function
-def compute_dirsize(dirname: str):
-    dirsize = direct_directory_size[dirname] # initialise the size by the size of the directory excluding the subdirectories
-    for ii in subdirs[dirname]: # go through all the subdirectories
-        if ii in subdirs:
-            dirsize += compute_dirsize(ii) # looping the subdirectory size addition until we no longer find the subdirectories
-    return dirsize
+        # count the number of trees visible looking up
+        count_visible_tree_up = 0 # initialising
+        for tt in range(len(tree_up)):
+            count_visible_tree_up += 1
+            if tree_up[len(tree_up) - 1 - tt] >= tree: # if we get to the tree that is the same height or taller we break
+                break
 
-# Part 1: Sum of all the directories with a total size of at most 100000.
-sol_pt1 = 0
-for ii in subdirs:
-    dirsize = compute_dirsize(ii)
-    if dirsize <= 100000:
-        sol_pt1 += dirsize
-print('The answer to the first questions is: ' + str(sol_pt1))
+        # count the number of trees visible looking down
+        count_visible_tree_down = 0 # initialising
+        for tt in range(len(tree_down)):
+            count_visible_tree_down += 1
+            if tree_down[tt] >= tree: # if we get to the tree that is the same height or taller we break
+                break
 
-# Part 2: The smallest possible file to delete to free up the required space.
-total_space = 70000000
-space_required = 30000000
-space_used = compute_dirsize('/')
+        # count the number of trees visible looking right
+        count_visible_tree_right = 0 # initialising
+        for tt in range(len(tree_right)):
+            count_visible_tree_right += 1
+            if tree_right[tt] >= tree: # if we get to the tree that is the same height or taller we break
+                break
 
-delete_this_directory = total_space
-for ii in direct_directory_size:
-    dirsize = compute_dirsize(ii)
-    if dirsize >= space_required - (total_space - space_used) and dirsize <= delete_this_directory:
-        delete_this_directory = dirsize
-print('The answer to the first questions is: ' + str(delete_this_directory))
+        # count the number of trees visible looking left
+        count_visible_tree_left = 0 # initialising
+        for tt in range(len(tree_left)):
+            count_visible_tree_left += 1
+            if tree_left[len(tree_left) - 1 - tt] >= tree: # if we get to the tree that is the same height or taller we break
+                break
 
+        # if tree is taller than the maxes in any directions we can see the tree
+        if tree > tallest_tree_up or tree > tallest_tree_down or tree > tallest_tree_right or tree > tallest_tree_left:
+            n_tree_visible += 1
 
+        # if the new view score is higher we overwrite the best score
+        view_score = count_visible_tree_up * count_visible_tree_down * count_visible_tree_right * count_visible_tree_left
+        if view_score > best_view_score:
+            best_view_score = view_score
 
+print('Part 1: number of visible trees is: ' + str(n_tree_visible))
+print('Part 2: the best view score is is: ' + str(best_view_score))
