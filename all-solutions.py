@@ -353,6 +353,76 @@ for ii in range(1, nrow - 1): # go through all the rows inside
 print('Part 1: number of visible trees is: ' + str(n_tree_visible))
 print('Part 2: the best view score is is: ' + str(best_view_score))
 
+# Day 9
+
+def make_moves(moves, rope_len):
+    # initialise 
+    xs = [0] * rope_len
+    ys = [0] * rope_len
+    visited = { (xs[-1], ys[-1]) }
+
+    # go through all the moves and record the visited spaces
+    for (mx, my), distance in moves:
+        for _ in range(distance):
+            # make moves on x and y
+            xs[0] += mx
+            ys[0] += my
+            for ii in range(rope_len - 1):
+                # distance created with the move
+                dx = xs[ii + 1] - xs[ii] 
+                dy = ys[ii + 1] - ys[ii]
+                if abs(dx) == 2 or abs(dy) == 2: # bring this up to speed diagonally 
+                    xs[ii + 1] = xs[ii] + int(dx / 2) 
+                    ys[ii + 1] = ys[ii] + int(dy / 2)
+            # add on the visitied spot
+            visited.add( (xs[-1], ys[-1]) )
+
+    # return the number of visited spots 
+    return len(visited)
+
+# define the directions
+dirs = {'L': (-1, 0), 'R': (1, 0), 'D': (0, -1), 'U': (0, 1)}
+
+# define the moves
+moves = [(dirs[line[0]], int(line[1:])) for line in open('input.txt')]
+
+# print results
+print("Part 1: the number of positions the tail visited is: " + str(make_moves(moves, 2)))
+print("Part 2: the number of positions the tail visited is: " + str(make_moves(moves, 10)))
+
+# Day 10
+
+with open('input.txt', 'r') as file:
+    data = file.read().strip().split('\n')
+
+x = 1 # initialising x
+x_list = [x] # store the progress here
+for line in data: # go line by line
+    if 'add' in line: # if we are told to add
+        x_list.extend([x, x]) # add two current x
+        x += int(line[5:]) # add onto x
+    else: # if we get noop
+        x_list.append(x)
+
+signal_strength = sum(x_list[cycle] * cycle for cycle in range(20, len(x_list), 40))
+
+print('The sum of the signal strengths is: ' + str(signal_strength))
+
+for yy in range(6): # go over the rows
+    crt_line = ''
+    for xx in range(40): # go over the columns
+        cycle = xx + yy * 40 # cycle number
+        crt_line += '.' if abs(xx - x_list[cycle + 1]) <= 1 else ' ' 
+    print(crt_line)
+
+
+
+
+
+
+
+
+
 
 
 
