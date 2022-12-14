@@ -491,6 +491,82 @@ n2 = max(n_handles)
 monkey_business = n1 * n2
 print('Part 1: monkey business after 20 rounds is: ' + str(monkey_business))
 
+# Day 12
+
+with open('input.txt', 'r') as file:
+    data = file.read()
+
+def can_go(g, p1, p2):
+    return(p2 in g and 
+    ((g[p1] == 'E' and g[p2] in 'yz') or 
+    (g[p2] == 'S' and g[p1] in 'ab') or 
+    (g[p2] != "S" and g[p1] != "E" and ord(g[p1]) - ord(g[p2]) <= 1)))
+
+
+# defining grid
+grid = {x + y * 1j: h for y, line in enumerate(data.split('\n'))
+                        for x, h in enumerate(line)}
+
+# find the starting and ending position
+start = [p for p, h in grid.items() if h == 'S'][0]
+end = [p for p, h in grid.items() if h == 'E'][0]
+
+# starting from the 'end' find distances to get to 'start'
+distance = {end: 0} # init dist dict from end
+queue = [end] # init place we can get to
+while queue: # keep walking around as long as we can get somewhere
+    p1 = queue.pop(0) # we are here
+    for p2 in [p1 - 1, p1 + 1, p1 + 1j, p1 - 1j]: # options around us
+        if p2 not in distance and can_go(grid, p1, p2): # if we haven't been here before and we can get there  
+            distance[p2] = distance[p1] + 1 # record distance from the end
+            queue.append(p2) # add it to our places to go
+
+# Part 2 - find the position in distance for S or any a
+short_dist = sorted(distance[p] for p in distance if grid[p] in "Sa")[0]            
+
+print('Part 1: the shortest distance from the start to the end is: ' + str(distance[start]))
+print('Part 2: the shortest distance from the start to the end is: ' + str(short_dist))
+
+# Day 13
+
+from functools import cmp_to_key
+
+with open('input.txt', 'r') as file:
+    data = file.read().split('\n\n')
+
+# lambdas to be used in the function
+I = lambda x:isinstance(x, int)
+L = lambda x:isinstance(x, list)
+
+# funtion to compare left and right
+def cmp(l, r):
+    if I(l) and I(r): # comparing integers
+        if l < r: return -1
+        return l > r
+    if L(l) and L(r): # comparing lists
+        for ii in range(min(len(l), len(r))):
+            c = cmp(l[ii], r[ii])
+            if c: return c
+        return cmp(len(l), len(r))
+    if I(l) and L(r): # comparing int and list
+        return cmp([l], r)
+    if L(l) and I(r): # comparing list and int
+        return cmp(l, [r])
+
+p = [] # init item storage
+n = 0 # initialise the sum
+for ii, ss in enumerate(data):
+    l, r = [eval(x) for x in ss.split()] # split up left and right values 
+    if cmp(l, r) <= 0: n += ii + 1
+    p.append(l); p.append(r)
+
+p.append([[2]]); p.append([[6]])
+
+p.sort(key = cmp_to_key(cmp))
+
+print("Part 1: the sum is " + str(n))
+
+print("Part 2: the decoder key for the distress signal is: " + str( (p.index([[2]]) + 1) * (p.index([[6]]) + 1) ))
 
 
 
