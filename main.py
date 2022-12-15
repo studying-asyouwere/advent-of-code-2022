@@ -1,39 +1,82 @@
-from functools import cmp_to_key
-
 with open('input.txt', 'r') as file:
-    data = file.read().split('\n\n')
+    data = file.read().strip()
 
-# lambdas to be used in the function
-I = lambda x:isinstance(x, int)
-L = lambda x:isinstance(x, list)
+# construct the cave layout first
+def interpolate(start, end): # structure interpolation
+    x1, y1 = start
+    x2, y2 = end
 
-# funtion to compare left and right
-def cmp(l, r):
-    if I(l) and I(r): # comparing integers
-        if l < r: return -1
-        return l > r
-    if L(l) and L(r): # comparing lists
-        for ii in range(min(len(l), len(r))):
-            c = cmp(l[ii], r[ii])
-            if c: return c
-        return cmp(len(l), len(r))
-    if I(l) and L(r): # comparing int and list
-        return cmp([l], r)
-    if L(l) and I(r): # comparing list and int
-        return cmp(l, [r])
+    if x1 == x2: # horizontal struct
+        for y in range(min(y1, y2), max(y1, y2) + 1): # horizontal line
+            yield x1, y
 
-p = [] # init item storage
-n = 0 # initialise the sum
-for ii, ss in enumerate(data):
-    l, r = [eval(x) for x in ss.split()] # split up left and right values 
-    if cmp(l, r) <= 0: n += ii + 1
-    p.append(l); p.append(r)
+    if y1 == y2: # vertical struct
+        for x in range(min(x1, x2), max(x1, x2) + 1): # vertical line
+            yield x, y1
 
-p.append([[2]]); p.append([[6]])
+def parse(data): # parsing fun
+    grid = dict()
+    bottom = 0
 
-p.sort(key = cmp_to_key(cmp))
+    for line in data.splitlines():
+        coords = line.split(' -> ') # extract coords from each line
+        coords = [tuple(int(c) for c in coord.split(',')) for coord in coords] # list of tuples of coordinates
 
-print("Part 1: the sum is " + str(n))
+        for start, end in zip(coords, coords[1:]): # go through each structure 
+            for pos in interpolate(start, end): # get all the positions of the struct
+                grid[pos] = '#'
+                if pos[1] > bottom:
+                    bottom = pos[1] # rising up the bottom due to struct
 
-print("Part 2: the decoder key for the distress signal is: " + str( (p.index([[2]]) + 1) * (p.index([[6]]) + 1) ))
+    return grid, bottom
+
+# define what happens when sand drops
+def drop_sand(grid, src, bottom):
+    x, y = src
+
+    while y < bottom:
+        for move in [(x, y + 1), (x - 1, y + 1), (x + 1, y + 1)]: # implement stone drop logic
+            if move not in grid: # stay within grid
+                x, y = move
+                break
+        else:
+            return True, (x, y) # return has stopped boolean and position
+
+    return False, (x, y)
+
+# Now we are ready to simulate the falling sand.
+def part1(grid):
+    grid, bottom = grid
+    grid = grid.copy()
+
+    src = (500, 0)
+    cnt = 0
+
+    while True:
+        has_stopped, pos = drop_sand(grid, src, bottom)
+        if not has_stopped:
+            break
+        grid[pos] = 'o' # sand
+        cnt += 1
+
+    return cnt
+
+# There is no more abyss
+def part2(grid):
+    grid, bottom = grid
+
+    src = (500, 0)
+    cnt = 0
+
+    while True:
+        _, pos = drop_sand(grid, src, bottom + 1)
+        grid[pos] = 'o' # sand
+        cnt += 1
+        if pos == src:
+            break
+
+    return cnt
+
+print('Part 1: the units of sand to come to rest before sand starts flowing into the abyss is: ' + str(part1(parse(data))))
+print('Part 2: the units of sand to come to rest before sand starts flowing into the abyss is: ' + str(part2(parse(data))))
 
