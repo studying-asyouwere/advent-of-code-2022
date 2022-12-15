@@ -1,82 +1,76 @@
-with open('input.txt', 'r') as file:
-    data = file.read().strip()
+import re
 
-# construct the cave layout first
-def interpolate(start, end): # structure interpolation
-    x1, y1 = start
-    x2, y2 = end
+y_spot = 2000000 
+ys = set()
+beacons_y = set()
 
-    if x1 == x2: # horizontal struct
-        for y in range(min(y1, y2), max(y1, y2) + 1): # horizontal line
-            yield x1, y
+with open("input.txt", 'r') as file:
+    for ll in file.readlines():
+        # get sensor and corresponding closest beacon coordinates
+        sx, sy, bx, by = map(int, re.findall(r'(?<=\=)(.*?)(?=,|\:|\n)', ll))
 
-    if y1 == y2: # vertical struct
-        for x in range(min(x1, x2), max(x1, x2) + 1): # vertical line
-            yield x, y1
+        if by == y_spot: # if the beacon is in the specified row
+            beacons_y.add(bx)
 
-def parse(data): # parsing fun
-    grid = dict()
-    bottom = 0
+        # compute the threshold distance
+        d = abs(bx - sx) + abs(by - sy)
+        d -= abs(y_spot - sy)
 
-    for line in data.splitlines():
-        coords = line.split(' -> ') # extract coords from each line
-        coords = [tuple(int(c) for c in coord.split(',')) for coord in coords] # list of tuples of coordinates
+        # add anything within the range
+        for x in range(sx - d, sx + d + 1):
+            ys.add(x)
 
-        for start, end in zip(coords, coords[1:]): # go through each structure 
-            for pos in interpolate(start, end): # get all the positions of the struct
-                grid[pos] = '#'
-                if pos[1] > bottom:
-                    bottom = pos[1] # rising up the bottom due to struct
+print('Part 1: the solution is: ' + str(len(ys - beacons_y)))
 
-    return grid, bottom
+mx = 4000000
+y_ranges = [[] for _ in range(mx + 1)]
+with open("input.txt", 'r') as file:
+    for ll in file.readlines():
+        # get sensor and corresponding closest beacon coordinates
+        sx, sy, bx, by = map(int, re.findall(r'(?<=\=)(.*?)(?=,|\:|\n)', ll))
 
-# define what happens when sand drops
-def drop_sand(grid, src, bottom):
-    x, y = src
+        # get potential y ranges and corresponding x ranges
+        d = abs(bx - sx) + abs(by - sy)
+        dy = 0
+        while d > 0: # will countdown the distance
+            xl = max(0, sx - d)
+            xr = min(mx, sx + d)
+            if (sy - dy >= 0):
+                y_ranges[sy - dy].append([xl, xr])
+            if (sy + dy <= mx and dy):
+                y_ranges[sy + dy].append([xl, xr])
+            dy += 1
+            d -= 1
 
-    while y < bottom:
-        for move in [(x, y + 1), (x - 1, y + 1), (x + 1, y + 1)]: # implement stone drop logic
-            if move not in grid: # stay within grid
-                x, y = move
+    # the answer for y is in there somewehre
+    for ans_y in range(mx + 1):
+        xs = y_ranges[ans_y]
+        if not xs:
+            continue
+        xs.sort()
+
+        if xs[0][0] != 0:
+            ans_x = 0
+            break
+
+        # sorry guys -- bit tipsy right now :D 
+        last_e = xs[0][1]
+        for ii in range(1, len(xs)):
+            if last_e >= xs[ii][0] - 1:
+                last_e = max(last_e, xs[ii][1])
+            else:
                 break
-        else:
-            return True, (x, y) # return has stopped boolean and position
 
-    return False, (x, y)
-
-# Now we are ready to simulate the falling sand.
-def part1(grid):
-    grid, bottom = grid
-    grid = grid.copy()
-
-    src = (500, 0)
-    cnt = 0
-
-    while True:
-        has_stopped, pos = drop_sand(grid, src, bottom)
-        if not has_stopped:
-            break
-        grid[pos] = 'o' # sand
-        cnt += 1
-
-    return cnt
-
-# There is no more abyss
-def part2(grid):
-    grid, bottom = grid
-
-    src = (500, 0)
-    cnt = 0
-
-    while True:
-        _, pos = drop_sand(grid, src, bottom + 1)
-        grid[pos] = 'o' # sand
-        cnt += 1
-        if pos == src:
+        if last_e != mx:
+            ans_x = last_e + 1
             break
 
-    return cnt
+# can you hear my computer? running like crazy right now....
+print('Part 2: the solution is: ' + str(mx * ans_x + ans_y))   
 
-print('Part 1: the units of sand to come to rest before sand starts flowing into the abyss is: ' + str(part1(parse(data))))
-print('Part 2: the units of sand to come to rest before sand starts flowing into the abyss is: ' + str(part2(parse(data))))
+        
+
+
+
+
 
