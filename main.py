@@ -1,80 +1,94 @@
-from collections import deque
+import re
 
-Cubes = []
 with open('input.txt', 'r') as file:
-    for ll in file:
-        Line = ll.strip()
-        x, y, z = list(map(int, Line.split(",")))
-        coord_tuple = (x, y, z)
-        Cubes.append(coord_tuple)
+    data = file.readlines()
+    bps = [bp.strip() for bp in data] # blueprints
 
-CubesSet = set(Cubes)
+# for every line extract integers
+bp_int = list()
+for bp in bps:
+    ints = [int(ii) for ii in re.findall(r'\d+', bp)]
+    bp_int.append(ints)
 
-AdjCoords = [(0, 0, 1), (0, 1, 0), (1, 0, 0), (0, 0, -1), (0, -1, 0), (-1, 0, 0)]
+def qass(state): # artificial quality assessment 
+    minutes, (robots, inventory, mined) = state
+    return 1000 * mined[3] + 100 * mined[2] + 10 * mined[1] + mined[0]
 
-total_sa = 0 # init surface area
-for x, y, z in Cubes:
-    default_sa = 6
-    for dx, dy, dz in AdjCoords:
-        nx, ny, nz = x + dx, y + dy, z + dz
-        if (nx, ny, nz) in CubesSet: # if there is the neighbour droplet
-            default_sa -= 1
-    total_sa += default_sa
+def bfs(costs, robots, num_minutes, top_queue = 30000):
+    queue = list()
+    queue.append((0, (robots, (0, 0, 0, 0), (0, 0, 0, 0))))
+    max_geodes_mined = 0
+    depth = 0
 
-print('Part 1: the total surface area is: ' + str(total_sa))
+    while queue: 
+        # go through the queue 
+        minutes, (robots, old_inventory, mined) = queue.pop(0)
 
-# let us figure out the boundaries
-minx, miny, minz = 50, 50, 50
-maxx, maxy, maxz = 0, 0, 0
-for x, y, z in Cubes: 
-    if x > maxx:
-        maxx = x
-    if x < minx:
-        minx = x
-    if y > maxy:
-        maxy = y
-    if y < miny:
-        miny = y
-    if z > maxz:
-        maxz = z
-    if z < minz:
-        minz = z
+        if minutes > depth:
+            queue.sort(key = qass, reverse = True)
+            queue = queue[:top_queue]
+            depth = minutes
 
-# add the first boundary cube
-Cube1 = (minx - 1, miny - 1, minz - 1)
-ExtCubes = []
-ExtCubesSet = set()
-ExtCubesSet.add(Cube1)
+        if minutes == num_minutes:
+            max_geodes_mined = max(max_geodes_mined, mined[3])
+            continue 
 
-QueueCubes = deque()
-QueueCubes.append(Cube1)
-while QueueCubes:
-    # get next cube in queue
-    NextCube = QueueCubes.popleft()
-    x, y, z = NextCube
+        # robots go to work
+        new_inventory = tuple([old_inventory[ii] + robots[ii] for ii in range(4)])
+        new_mined = tuple([mined[ii] + robots[ii] for ii in range(4)])
 
-    # add it as an external cube
-    ExtCubes.append(NextCube)
+        # if we were not to build a robot
+        queue.append((minutes + 1, (robots, new_inventory, new_mined)))
 
-    # test the "boundariness" of the cubes
-    for dx, dy, dz in AdjCoords:
-        nx, ny, nz = x + dx, y + dy, z + dz
-        if nx < minx - 1 or nx > maxx + 1 or ny < miny - 1 or ny > maxy + 1 or nz < minz - 1 or nz > maxz + 1:
-            continue
-        ThisCube = (nx, ny, nz)
-        if ThisCube in CubesSet or ThisCube in ExtCubesSet:
-            continue
-        QueueCubes.append(ThisCube)
-        ExtCubesSet.add(ThisCube)
+        # if we were to build a robot
+        for ii in range(4): # for each type of robot
+            cost_robot = costs[ii]
 
-total_ext_sa = 0 # init total external surface area
-for x, y, z in ExtCubes:
-    default_sa = 0
-    for dx, dy, dz in AdjCoords:
-        nx, ny, nz = x + dx, y + dy, z + dz
-        if (nx, ny, nz) in CubesSet: # if there is a cube here
-            default_sa += 1
-    total_ext_sa += default_sa
+            # can we afford this guy??
+            if all([old_inventory[jj] >= cost_robot[jj] for jj in range(4)]):
+                new_robots = list(robots)
+                new_robots[ii] += 1
+                new_robots = tuple(new_robots)
 
-print('Part 2: the total exterior surface area is: ' + str(total_ext_sa))
+                # money well spent
+                new_inventory_state = tuple([new_inventory[jj] - cost_robot[jj] for jj in range(4)])
+                queue.append((minutes + 1, (new_robots, new_inventory_state, new_mined)))
+
+    return max_geodes_mined
+
+max_minutes = 24 
+sum_quality = 0
+for bpid, cost_ore_robot, cost_clay_robot, ob_ore, obs_clay, geode_ore, geode_ob in bp_int:
+    cost_per_robot = [
+        (cost_ore_robot, 0, 0, 0),
+        (cost_clay_robot, 0, 0, 0),
+        (ob_ore, obs_clay, 0, 0),
+        (geode_ore, 0, geode_ob, 0)
+    ]
+    num_mined = bfs(cost_per_robot, (1, 0, 0, 0), max_minutes, top_queue = 1000)
+
+    sum_quality += num_mined * bpid
+
+print("Part 1: the quality level is: " + str(sum_quality))
+
+max_minutes = 32 
+product_geodes = 1
+for bpid, cost_ore_robot, cost_clay_robot, ob_ore, obs_clay, geode_ore, geode_ob in bp_int[:3]:
+    cost_per_robot = [
+        (cost_ore_robot, 0, 0, 0),
+        (cost_clay_robot, 0, 0, 0),
+        (ob_ore, obs_clay, 0, 0),
+        (geode_ore, 0, geode_ob, 0)
+    ]
+    num_mined = bfs(cost_per_robot, (1, 0, 0, 0), max_minutes, top_queue = 10000)
+    product_geodes *= num_mined
+
+print("Part 2: the answer is: " + str(product_geodes))
+
+
+
+
+
+
+
 
