@@ -1147,6 +1147,94 @@ for bpid, cost_ore_robot, cost_clay_robot, ob_ore, obs_clay, geode_ore, geode_ob
 
 print("Part 2: the answer is: " + str(product_geodes))
 
+# Day 20
+
+from collections import deque
+
+with open('input.txt', 'r') as file:
+    data = file.read().splitlines()
+
+data_content = deque([*map(lambda n: int(n), data)])
+index_data_content = deque(range(0, length := len(data_content)))
+
+for idx in range(length):
+    position = index_data_content.index(idx)
+    for deq in [data_content, index_data_content]:
+        deq.rotate(position * -1)
+        local_value = deq.popleft()
+        if deq == data_content: current_value = local_value
+        deq.rotate(current_value * -1)
+        deq.appendleft(local_value)
+
+zero = data_content.index(0)
+hint1, hint2, hint3 = (
+    data_content[(zero + 1000) % (len(data_content))],
+    data_content[(zero + 2000) % (len(data_content))],
+    data_content[(zero + 3000) % (len(data_content))]
+)
+
+print('Part 1: the sum of the three numbers that form the grove coordinates is: ' + str(sum([hint1, hint2, hint3])))
+
+data_content = deque([*map(lambda n: int(n) * 811589153, data)])
+index_data_content = deque(range(0, length := len(data_content)))
+
+for _ in range(10):
+    for idx in range(length):
+        position = index_data_content.index(idx)
+        for deq in [data_content, index_data_content]:
+            deq.rotate(position * -1)
+            local_value = deq.popleft()
+            if deq == data_content: current_value = local_value
+            deq.rotate(current_value * -1)
+            deq.appendleft(local_value)
+
+zero = data_content.index(0)
+hint1, hint2, hint3 = (
+    data_content[(zero + 1000) % (len(data_content))],
+    data_content[(zero + 2000) % (len(data_content))],
+    data_content[(zero + 3000) % (len(data_content))]
+)
+
+print('Part 2: the sum of the three numbers that form the grove coordinates is: ' + str(sum([hint1, hint2, hint3])))
+
+# Day 21
+
+with open('input.txt', 'r') as file:
+    data = file.read().splitlines()
+
+# Part 1
+monkeys = {} # store monkeys here
+while 'root' not in monkeys: # until we get to root
+    for ll in data:
+        m = ll[:4]
+        if len(ll) > 8: m1, m2 = ll[6:10], ll[13:]
+        try:
+            if '+' in ll: monkeys[m] = monkeys[m1] + monkeys[m2] 
+            elif '-' in ll: monkeys[m] = monkeys[m1] - monkeys[m2] 
+            elif '*' in ll: monkeys[m] = monkeys[m1] * monkeys[m2] 
+            elif '/' in ll: monkeys[m] = monkeys[m1] // monkeys[m2] 
+            else: monkeys[m] = int(ll[6:])
+        except (KeyError, TypeError): pass
+
+print('Part 1: root will yell: ' + str(monkeys['root']) + "!")
+
+# Part 2
+for ll in data: monkeys[ll[:4]] = ll[6:]
+del monkeys['humn']
+equation = monkeys.pop('root').replace("+", "=")
+while any([k in equation for k in monkeys]):
+    for m in monkeys:
+        if m in equation:
+            equation = equation.replace(m, '(' + monkeys[m] + ')')
+
+equation = equation.replace('=', '- (') + ')'
+c = eval(equation.replace('humn', '-1j'))
+r2 = round(c.real / c.imag)
+
+print('Part 2: I will need to yell: ' + str(r2) + " !")
+
+
+
 
 
 
