@@ -1447,6 +1447,116 @@ while True:
 
 print('Part 2: the number of the first round where no Elf moves is: ' + str(round))
 
+# Day 24
+
+with open('input.txt', 'r') as f:
+    data = f.read()
+
+board = [list(line[1:-1]) for line in data.strip().splitlines()[1:-1]]
+
+directions = {
+    '>': (0, 1),
+    '<': (0, -1),
+    '^': (-1, 0),
+    'v': (1, 0)
+}
+
+class Solver:
+    def __init__(self, board):
+        self.board = board
+        self.n = len(board)
+        self.m = len(board[0])
+
+        self.blizzard = [
+            ((ii, jj), directions[char])
+            for ii, line in enumerate(board)
+            for jj, char in enumerate(line)
+            if char in directions
+        ]
+
+    def travel(self, step, start, end):
+        step += 1
+        queue = set()
+        while True:
+            step += 1 
+            forbidden = {
+                ((ii + di * step) % self.n, (jj + dj * step) % self.m)
+                for (ii, jj), (di, dj) in self.blizzard
+            }
+
+            queue.add(start)
+            next_queue = set()
+            for ii, jj in queue:
+                if (ii, jj) == end:
+                    return step
+                for ni, nj in (ii, jj), (ii + 1, jj), (ii - 1, jj), (ii, jj + 1), (ii, jj - 1):
+                    if not 0 <= ni < self.n:
+                        continue 
+                    if not 0 <= nj < self.m:
+                        continue 
+                    if (ni, nj) in forbidden:
+                        continue
+                    next_queue.add((ni, nj))
+            queue = next_queue
+
+# Part 1
+solver = Solver(board)
+start = (0, 0)
+end = (solver.n - 1, solver.m - 1)
+print('Part 1: the fewest number of minutes is ' + str(solver.travel(0, start, end)))
+
+# Part 2
+solver = Solver(board)
+start = (0, 0)
+end = (solver.n - 1, solver.m - 1)
+t1 = solver.travel(0, start, end)
+t2 = solver.travel(t1, end, start)
+t3 = solver.travel(t2, start, end)
+print('Part 2: the fewest number of minutes is ' + str(t3))
+
+# Day 25
+
+with open('input.txt', 'r') as file:
+    data = file.read()
+
+fuels = { '=': -2, '-': -1, '0': 0, '1': 1, '2': 2 }
+decimals = dict(map(reversed, fuels.items()))
+
+numbers = []
+
+def to_decimal(number):
+    result = sum([(5 ** ii) * fuels[c] for ii, c in enumerate(reversed(number))])
+    return result
+
+def to_fuel(number):
+    value = []
+
+    while number > 0:
+        remainder = number % 5
+        if remainder > 2:
+            number += remainder
+            value.append(decimals[remainder - 5])
+        else: 
+            value.append(str(remainder))
+
+        number //= 5
+
+    return ''.join(reversed(value))
+
+for line in data.splitlines():
+    numbers.append(to_decimal(line))
+
+snafu = to_fuel(sum(numbers))
+
+print('The SNAFU number to supply to the console is: ' + snafu)
+
+
+
+
+
+
+
+
 
 
 
